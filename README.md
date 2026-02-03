@@ -51,6 +51,14 @@ Key variables:
 - For large ranges, increase `WORKERS` to parallelize by date blocks. SQLite is configured for WAL + retry.
 - Ensure Playwright browsers are installed.
 
+## Smoke Test (manual)
+1. Run a single-day range:
+   ```bash
+   python -m diario_oficial_ocr run --start 1976-02-05 --end 1976-02-05
+   ```
+2. Verify logs show a non-404 page and the presence of `img#image`, `select#seccion`, `select#carilla`, and a next button.
+3. Confirm outputs exist under `output/screenshots/` and `output/checkpoints.sqlite`.
+
 ## Tests
 ```bash
 pytest

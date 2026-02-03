@@ -36,12 +36,11 @@ class SiteConfig:
     selectors: dict = dataclasses.field(
         default_factory=lambda: {
             "images_view_link": "a:has-text('Imágenes del Diario Oficial'), a[href*='imagenes']",
-            "images_view_indicator": "img#image, img#pagina, img#imagen",
             "date_input": "input[name='fecha'], input#fecha, input[type='text'][placeholder*='dd']",
             "section_select": "select[name='seccion'], select#seccion, select[name='Seccion']",
             "apply_button": "button:has-text('Buscar'), input[type='submit'][value*='Buscar']",
             "carilla_label": ".carilla-number, #carilla, .carilla",
-            "image": "img#pagina, img#imagen, img[src*='carilla'], img[src*='imagen']",
+            "image": "img#image, img#pagina, img#imagen, img[src*='carilla'], img[src*='imagen']",
             "next_carilla": "button[aria-label='Siguiente'], button:has-text('>'), a[title*='Siguiente']",
             "prev_carilla": "button[aria-label='Anterior'], button:has-text('<'), a[title*='Anterior']",
             "no_content": "text=No se encontraron resultados, text=No existe, text=Sin resultados",
