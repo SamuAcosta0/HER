@@ -39,15 +39,22 @@ class DiarioOficialNavigator:
             )
             page = context.new_page()
             page.set_default_timeout(self.browser.navigation_timeout_ms)
-            page.goto(self._date_url(target_date))
+
+            # --- DECISIÓN ARQUITECTÓNICA #3: Navegación Base ---
+            # No usamos URLs con fecha. Entramos al home y operamos la UI.
+            page.goto(self.site.base_url)
+            
             self._ensure_images_view(page)
+            # Pasamos target_date para que los logs de error tengan contexto
             self._validate_images_view(page, stage="pre-filter", target_date=target_date)
+            
             self._apply_filters(page, target_date)
 
             if self._no_content(page):
                 logger.info("No content for %s", target_date)
                 browser.close()
                 return
+
             self._validate_images_view(page, stage="post-filter", target_date=target_date)
 
             previous_hash: Optional[str] = None
@@ -85,31 +92,45 @@ class DiarioOficialNavigator:
         date_str = target_date.strftime("%d/%m/%Y")
         selectors = self.site.selectors
         backoff = Backoff()
+        
         for attempt in range(self.browser.max_action_retries):
             try:
                 page.wait_for_selector(selectors["section_select"], timeout=self.browser.navigation_timeout_ms)
                 page.wait_for_selector(selectors["date_input"], timeout=self.browser.navigation_timeout_ms)
+                
                 date_input = page.locator(selectors["date_input"]).first
                 date_input.fill(date_str)
+                
                 section_select = page.locator(selectors["section_select"]).first
+                
+                # --- DECISIÓN ARQUITECTÓNICA #4: Prioridad Value ---
                 if section_select.count() > 0:
                     try:
+                        # Intentamos seleccionar por VALUE (ej: "9")
                         section_select.select_option(value=self.site.section_value)
                     except Exception:
+                        # Fallback a label solo si falla el value
                         section_select.select_option(label=self.site.section_name)
                 else:
                     page.get_by_label("Sección").select_option(value=self.site.section_value)
+                
                 self._log_section_options(page)
+                
+                # Validación inmediata del valor seleccionado
                 selected = page.locator(selectors["section_select"]).first.input_value()
                 if selected != self.site.section_value:
                     logger.warning("Section value mismatch. selected=%s expected=%s", selected, self.site.section_value)
+                
                 page.locator(selectors["apply_button"]).first.click()
                 page.wait_for_timeout(self.browser.action_delay_ms)
                 return
+            
             except Exception as exc:
+                # Usamos la lógica de Codex: Loguear estado, guardar evidencia y reintentar limpiamente
                 self._log_ui_state(page, context="apply-filters-failed", target_date=target_date)
                 logger.warning("Retrying apply filters: %s", exc)
                 backoff.sleep(attempt)
+        
         raise RuntimeError("Failed to apply filters")
 
     def _no_content(self, page: Page) -> bool:
@@ -135,7 +156,8 @@ class DiarioOficialNavigator:
             return
 
     def _validate_images_view(self, page: Page, stage: str, target_date: date) -> None:
-        selectors = self.site.selectors
+        # --- DECISIÓN ARQUITECTÓNICA #3: Validación Estricta ---
+        # Si no estamos en la vista correcta, fallamos. No intentamos navegar a URLs mágicas.
         try:
             if not self._has_images_view(page):
                 self._log_ui_state(page, context=f"validate-images-view-{stage}", target_date=target_date)
@@ -148,8 +170,10 @@ class DiarioOficialNavigator:
         image = page.locator(selectors["image"]).first
         section = page.locator(selectors["section_select"]).first
         carilla = page.locator("select#carilla, select[name='carilla']").first
+        # Codex check: verificar que el dropdown tenga opciones cargadas
         carilla_options = page.locator("select#carilla option, select[name='carilla'] option")
         next_button = page.locator(selectors["next_carilla"]).first
+        
         return all(
             [
                 image.count() > 0,
@@ -179,16 +203,19 @@ class DiarioOficialNavigator:
             url = page.url
         except Exception:
             url = ""
+            
         def _exists(selector: str) -> bool:
             try:
                 return page.locator(selector).count() > 0
             except Exception:
                 return False
+                
         def _count(selector: str) -> int:
             try:
                 return page.locator(selector).count()
             except Exception:
                 return 0
+                
         logger.warning(
             "UI state (%s): url=%s title=%s image=%s section=%s carilla=%s next=%s counts(image=%s section=%s carilla=%s next=%s)",
             context,
@@ -203,9 +230,11 @@ class DiarioOficialNavigator:
             _count("select#carilla, select[name='carilla']"),
             _count(selectors["next_carilla"]),
         )
+        # --- DECISIÓN #6: Instrumentación de Evidencia ---
         self._dump_debug_artifacts(page, context=context, target_date=target_date)
 
     def _dump_debug_artifacts(self, page: Page, context: str, target_date: date) -> None:
+        # Guarda Screenshot y HTML cuando algo falla
         debug_dir = Path(self.browser.screenshot_dir).parent / "debug"
         debug_dir.mkdir(parents=True, exist_ok=True)
         stamp = target_date.strftime("%Y%m%d")
@@ -220,8 +249,7 @@ class DiarioOficialNavigator:
         except Exception as exc:
             logger.warning("Failed to capture debug HTML: %s", exc)
 
-    def _date_url(self, target_date: date) -> str:
-        return f"{self.site.base_url}/{target_date.strftime('%Y/%m/%d')}"
+    # _date_url ELIMINADO intencionalmente (Punto 5 del Informe)
 
     def _capture_snapshot(self, page: Page, target_date: date) -> Optional[PageSnapshot]:
         selectors = self.site.selectors
@@ -248,6 +276,7 @@ class DiarioOficialNavigator:
         selectors = self.site.selectors
         try:
             current = page.locator(selectors["section_select"]).input_value()
+            # Comparación estricta por VALUE (Punto 4 del Informe)
             if current and current != self.site.section_value:
                 logger.info("Section reset detected for %s. Reapplying filters.", target_date)
                 self._apply_filters(page, target_date)

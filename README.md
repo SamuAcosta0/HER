@@ -37,7 +37,7 @@ Key variables:
 - `GOOGLE_APPLICATION_CREDENTIALS=/path/to/creds.json`
 - `WORKERS=2`
 - `SECTION_VALUE=9` (required for **Avisos Publicados** in the images view)
-- `BASE_URL=https://www.impo.com.uy/diariooficial` (the navigator appends `/YYYY/MM/DD`)
+- `BASE_URL=https://www.impo.com.uy/diariooficial/imagenes` (forces the images view)
 
 ## Output
 - `output/checkpoints.sqlite`

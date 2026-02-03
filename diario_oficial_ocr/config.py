@@ -30,7 +30,7 @@ class BrowserConfig:
 
 @dataclasses.dataclass
 class SiteConfig:
-    base_url: str = "https://www.impo.com.uy/diariooficial"
+    base_url: str = "https://www.impo.com.uy/diariooficial/imagenes"
     section_name: str = "Avisos Publicados"
     section_value: str = "9"
     selectors: dict = dataclasses.field(
@@ -99,7 +99,7 @@ def load_config() -> AppConfig:
             viewport_height=int(os.getenv("VIEWPORT_HEIGHT", "900")),
         ),
         site=SiteConfig(
-            base_url=os.getenv("BASE_URL", "https://www.impo.com.uy/diariooficial"),
+            base_url=os.getenv("BASE_URL", "https://www.impo.com.uy/diariooficial/imagenes"),
             section_name=os.getenv("SECTION_NAME", "Avisos Publicados"),
             section_value=os.getenv("SECTION_VALUE", "9"),
         ),
