@@ -30,17 +30,21 @@ class BrowserConfig:
 
 @dataclasses.dataclass
 class SiteConfig:
-    base_url: str = "https://www.impo.com.uy/diariooficial"
+    base_url: str = "https://www.impo.com.uy/diariooficial/imagenes"
     section_name: str = "Avisos Publicados"
+    section_value: str = "9"
     selectors: dict = dataclasses.field(
         default_factory=lambda: {
-            "date_input": "input[name='fecha']",
-            "section_select": "select[name='seccion']",
-            "apply_button": "button:has-text('Buscar')",
-            "carilla_label": ".carilla-number",
-            "image": "img#pagina",
-            "next_carilla": "button[aria-label='Siguiente'], button:has-text('>')",
-            "no_content": "text=No se encontraron resultados",
+            "images_view_link": "a:has-text('Imágenes del Diario Oficial'), a[href*='imagenes']",
+            "images_view_indicator": "img#image, img#pagina, img#imagen",
+            "date_input": "input[name='fecha'], input#fecha, input[type='text'][placeholder*='dd']",
+            "section_select": "select[name='seccion'], select#seccion, select[name='Seccion']",
+            "apply_button": "button:has-text('Buscar'), input[type='submit'][value*='Buscar']",
+            "carilla_label": ".carilla-number, #carilla, .carilla",
+            "image": "img#pagina, img#imagen, img[src*='carilla'], img[src*='imagen']",
+            "next_carilla": "button[aria-label='Siguiente'], button:has-text('>'), a[title*='Siguiente']",
+            "prev_carilla": "button[aria-label='Anterior'], button:has-text('<'), a[title*='Anterior']",
+            "no_content": "text=No se encontraron resultados, text=No existe, text=Sin resultados",
         }
     )
 
@@ -96,8 +100,9 @@ def load_config() -> AppConfig:
             viewport_height=int(os.getenv("VIEWPORT_HEIGHT", "900")),
         ),
         site=SiteConfig(
-            base_url=os.getenv("BASE_URL", "https://www.impo.com.uy/diariooficial"),
+            base_url=os.getenv("BASE_URL", "https://www.impo.com.uy/diariooficial/imagenes"),
             section_name=os.getenv("SECTION_NAME", "Avisos Publicados"),
+            section_value=os.getenv("SECTION_VALUE", "9"),
         ),
         storage=StorageConfig(
             db_path=os.getenv("DB_PATH", "output/checkpoints.sqlite"),

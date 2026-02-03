@@ -17,6 +17,14 @@ Production-grade automation to navigate IMPO Diario Oficial, capture scanned pag
 python -m diario_oficial_ocr run --start 1983-01-01 --end 1983-01-03
 ```
 
+The navigator targets **“Imágenes del Diario Oficial”** (historical scanned images). If the site opens in the modern PDF/HTML view, it will switch automatically.
+
+If you see `sqlite3.OperationalError: unable to open database file`, create the output directory:
+
+```bash
+mkdir -p output
+```
+
 ### Environment
 Copy `.env.example` and adjust values:
 
@@ -28,6 +36,8 @@ Key variables:
 - `OCR_BACKEND=google` or `tesseract`
 - `GOOGLE_APPLICATION_CREDENTIALS=/path/to/creds.json`
 - `WORKERS=2`
+- `SECTION_VALUE=9` (required for **Avisos Publicados** in the images view)
+- `BASE_URL=https://www.impo.com.uy/diariooficial/imagenes` (forces the images view)
 
 ## Output
 - `output/checkpoints.sqlite`
