@@ -38,14 +38,12 @@ class DiarioOficialNavigator:
             page = context.new_page()
             page.set_default_timeout(self.browser.navigation_timeout_ms)
             page.goto(self.site.base_url)
-            self._ensure_images_view(page)
             self._apply_filters(page, target_date)
 
             if self._no_content(page):
                 logger.info("No content for %s", target_date)
                 browser.close()
                 return
-            self._validate_images_view(page)
 
             previous_hash: Optional[str] = None
             previous_carilla: Optional[str] = None
@@ -84,17 +82,9 @@ class DiarioOficialNavigator:
         backoff = Backoff()
         for attempt in range(self.browser.max_action_retries):
             try:
-                date_input = page.locator(selectors["date_input"]).first
-                date_input.fill(date_str)
-                section_select = page.locator(selectors["section_select"]).first
-                if section_select.count() > 0:
-                    try:
-                        section_select.select_option(value=self.site.section_value)
-                    except Exception:
-                        section_select.select_option(label=self.site.section_name)
-                else:
-                    page.get_by_label("Sección").select_option(value=self.site.section_value)
-                page.locator(selectors["apply_button"]).first.click()
+                page.fill(selectors["date_input"], date_str)
+                page.select_option(selectors["section_select"], label=self.site.section_name)
+                page.click(selectors["apply_button"])
                 page.wait_for_timeout(self.browser.action_delay_ms)
                 return
             except Exception as exc:
@@ -105,33 +95,9 @@ class DiarioOficialNavigator:
     def _no_content(self, page: Page) -> bool:
         selectors = self.site.selectors
         try:
-            if page.locator(selectors["no_content"]).first.is_visible():
-                return True
-            image_locator = page.locator(selectors["image"]).first
-            if image_locator.count() > 0 and not image_locator.is_visible():
-                return True
-            return False
+            return page.locator(selectors["no_content"]).first.is_visible()
         except Exception:
             return False
-
-    def _ensure_images_view(self, page: Page) -> None:
-        selectors = self.site.selectors
-        try:
-            link = page.locator(selectors["images_view_link"]).first
-            if link.count() > 0 and link.is_visible():
-                link.click()
-                page.wait_for_timeout(self.browser.action_delay_ms)
-        except Exception:
-            return
-
-    def _validate_images_view(self, page: Page) -> None:
-        selectors = self.site.selectors
-        try:
-            image_locator = page.locator(selectors["image"]).first
-            if image_locator.count() == 0:
-                raise RuntimeError("Images view not loaded; image element not found.")
-        except Exception as exc:
-            raise RuntimeError("Images view not loaded; image element not found.") from exc
 
     def _capture_snapshot(self, page: Page, target_date: date) -> Optional[PageSnapshot]:
         selectors = self.site.selectors
@@ -158,7 +124,7 @@ class DiarioOficialNavigator:
         selectors = self.site.selectors
         try:
             current = page.locator(selectors["section_select"]).input_value()
-            if current and current != self.site.section_value:
+            if current and self.site.section_name.lower() not in current.lower():
                 logger.info("Section reset detected for %s. Reapplying filters.", target_date)
                 self._apply_filters(page, target_date)
         except Exception:
