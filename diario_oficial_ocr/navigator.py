@@ -106,6 +106,12 @@ class DiarioOficialNavigator:
                 return
             except Exception as exc:
                 self._log_ui_state(page, context="apply-filters-failed")
+                page.fill(selectors["date_input"], date_str)
+                page.select_option(selectors["section_select"], label=self.site.section_name)
+                page.click(selectors["apply_button"])
+                page.wait_for_timeout(self.browser.action_delay_ms)
+                return
+            except Exception as exc:
                 logger.warning("Retrying apply filters: %s", exc)
                 backoff.sleep(attempt)
         raise RuntimeError("Failed to apply filters")
@@ -225,6 +231,7 @@ class DiarioOficialNavigator:
         try:
             current = page.locator(selectors["section_select"]).input_value()
             if current and current != self.site.section_value:
+            if current and self.site.section_name.lower() not in current.lower():
                 logger.info("Section reset detected for %s. Reapplying filters.", target_date)
                 self._apply_filters(page, target_date)
         except Exception:
