@@ -17,12 +17,6 @@ Production-grade automation to navigate IMPO Diario Oficial, capture scanned pag
 python -m diario_oficial_ocr run --start 1983-01-01 --end 1983-01-03
 ```
 
-If you see `sqlite3.OperationalError: unable to open database file`, create the output directory:
-
-```bash
-mkdir -p output
-```
-
 ### Environment
 Copy `.env.example` and adjust values:
 
